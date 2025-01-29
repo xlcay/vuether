@@ -1,9 +1,9 @@
 <template>
     
-     <div class="flex flex-row gap-5 justify-center items-center">
-        <div class="bg-light/70 p-8 rounded-lg shadow-lg">
+     <div class="flex">
+        <div class="bg-light p-8 rounded-lg shadow-lg">
           
-          <div class="flex gap-2 mb-4">
+          <div class="flex gap-2 mb-6">
             <input 
               v-model="city" 
               type="text" 
@@ -13,7 +13,7 @@
             />
             <button 
               @click="fetchWeatherData"
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              class="px-4 py-2 text-white rounded-lg bg-light-green"
               :disabled="pending"
             >
               {{ pending ? 'Yükleniyor...' : 'Ara' }}
@@ -32,7 +32,7 @@
           <div v-else-if="weatherData" class="flex flex-col space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-semibold text-dark">{{ weatherData.name }}</h3>
-              <span class="text-sm text-dark">{{ cityTime }}</span>
+              <span class="text-md font-bold text-dark">{{ cityTime }}</span>
             </div>
     
             <div class="flex items-center gap-4">
@@ -48,21 +48,16 @@
                 <img
                 :src="getIconUrl(weatherData.weather[0].icon)"
                 :alt="weatherData.weather[0].description"
-                class="w-12 h-12"
+                class="w-16 h-16"
                 />
               </div>
               <span class="text-dark capitalize">{{ weatherData.weather[0].description }}</span>
             </div>
 
-            <div v-if="coordinates" class="text-sm text-gray-600">
+            <div v-if="coordinates" class="text-sm text-gray-600 italic">
               Koordinatlar: {{ coordinates.lat }}°N, {{ coordinates.lon }}°E
             </div>
-          </div>
-
-          <!-- weatherData hazır olduğunda pusula göster -->
-            <div v-if="weatherData" class="mt-4">
-              <Compass :weatherData="weatherData" />
-            </div>
+          </div>          
         </div>
       </div> 
 
@@ -82,7 +77,9 @@
         'dark-blue-2': '#4a5c6a',
         'dark-gray': '#9babab',
         'light': '#ccd0cf',
-      
+        'green': '#235347',
+        'light-green': '#8eb69b',
+        'dark-green': '#163832'
       }, */
 
 
@@ -98,8 +95,9 @@ import { ref, onMounted, watch, defineEmits } from 'vue';
 const config = useRuntimeConfig();
 const apiKey = config.public.openWeatherMapApiKey;
 
-const city = ref('London');
+const city = ref('Londra');
 const weatherData = ref(null);
+const forecast = ref(null);
 const error = ref(null);
 const pending = ref(false);
 const coordinates = ref(null);
@@ -107,7 +105,7 @@ const cityTime = ref(null);
 let timeInterval; 
 
 
-const emit = defineEmits(['update:coords']);
+const emit = defineEmits(['weather-updated', 'forecast-updated']);
 
 onMounted(async () => {
   await fetchWeatherData();
@@ -117,22 +115,43 @@ onMounted(async () => {
 async function fetchWeatherData() {
   pending.value = true;
   error.value = null;
-  
+
   try {
     const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city.value}&appid=${apiKey}&units=metric&lang=tr`
+      `https://api.openweathermap.org/data/2.5/forecast?q=${city.value}&appid=${apiKey}&units=metric&lang=tr`
     );
-    const data = await response.json();
     
+    const data = await response.json();
+
     if (response.ok) {
-      weatherData.value = data;
-      coordinates.value = {
-        lat: data.coord.lat,
-        lon: data.coord.lon
+      weatherData.value = {
+        ...data.list[0],
+        name: data.city.name,
+        coord: data.city.coord,
+        sys: {
+          country: data.city.country
+        }
       };
-      updateCityTime(data.timezone);
+      
+      // Her günün 15:00 verisi
+      const dailyForecasts = data.list.filter(item => {
+        const hour = new Date(item.dt * 1000).getHours();
+        return hour === 15;
+      });
+
+      forecast.value = dailyForecasts;
+
+      coordinates.value = {
+        lat: data.city.coord.lat,
+        lon: data.city.coord.lon
+      };
+
+      updateCityTime(data.city.timezone);
+
+      emit('weather-updated', weatherData.value);
+      emit('forecast-updated', forecast.value);
     } else {
-      error.value = 'Şehir bulunamadı';
+      error.value = data.message || 'Şehir bulunamadı';
     }
   } catch (err) {
     error.value = 'Bir hata oluştu';
@@ -158,7 +177,7 @@ function updateCityTime(timezoneOffset) {
     cityTime.value = targetTime.toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      timeZone: 'GMT',
     });
   };
 
@@ -177,6 +196,20 @@ function getIconUrl(iconCode) {
 watch(coordinates, (val) => {
   if (val && val.lat != null && val.lon != null) {
     emit('update:coords', val);
+  }
+});
+
+// Veriyi App.vue'ya gönder
+watch(weatherData, (newData) => {
+  if (newData) {
+    emit('weather-updated', newData);
+  }
+});
+
+// Forecast verisini de gönder
+watch(forecast, (newForecast) => {
+  if (newForecast) {
+    emit('forecast-updated', newForecast);
   }
 });
 

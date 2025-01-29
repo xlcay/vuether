@@ -18,6 +18,10 @@ export default {
         'dark-blue-2': '#4a5c6a',
         'dark-gray': '#9babab',
         'light': '#ccd0cf',
+        'green': '#235347',
+        'light-green': '#8eb69b',
+        'dark-green': '#163832',
+        'dark-green-700': '#0b2b26'
       
       },
     extend: {},

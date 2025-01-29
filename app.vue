@@ -1,6 +1,5 @@
 <template>
-
-  <div class="min-h-screen bg-dark">
+  <div class="min-h-screen bg-gradient-to-b from-dark-blue to-dark-green">
     <div class="container mx-auto px-4 py-8 flex flex-col items-center justify-center">
       <!-- Head -->
       <div class="flex flex-col items-center justify-center">
@@ -10,15 +9,36 @@
         </h2>
         <animatedSun class="rounded-full bg-light bg-opacity-30 p-1 cursor-pointer hover:bg-opacity-50 transition-all"/>
       </div>
-    </div>
 
-    <!-- Content -->
-     
-    <div class="flex flex-row justify-center items-center gap-5">
-      <WeatherCard />
-      
+      <!-- Content -->
+      <div class="w-full flex flex-col gap-8 mt-8">
+        <!-- Üst sıra: WeatherCard ve Compass yan yana -->
+        <div class="flex flex-col md:flex-row gap-8 justify-center">
+          <!-- WeatherCard -->
+          <div class="space-between flex">
+            <WeatherCard 
+              @weather-updated="handleWeatherUpdate"
+              @forecast-updated="handleForecastUpdate"
+            />
+          </div>
+
+          <!-- Compass -->
+          <div v-if="currentWeather" class="w-full md:w-1/3 bg-transparent rounded-lg p-6">
+            <h3 class="text-xl font-bold mb-4 text-light text-center">Güneş Konumu</h3>
+            <Compass :weatherData="currentWeather" />
+          </div>
+        </div>
+
+        <!-- Alt sıra: Forecast tam genişlikte -->
+        <div v-if="forecastData" class="w-full">
+          <Forecast :forecast="forecastData" />
+        </div>
+      </div>
+
+      <span class="text-light relative text-sm italic mt-8">
+        Calculations may be inaccurate due to OpenWeatherMap API limitations.
+      </span>
     </div>
-    <span class="text-light relative text-sm italic ">Calculations may be inaccurate due to OpenWeatherMap API limitations.</span>
   </div>
 </template>
 <!-- 
@@ -33,13 +53,23 @@
 
 
 <script setup>
-  import WeatherCard from '~/components/WeatherCard.vue';
-  import { ref } from 'vue';
-  import animatedSun from '~/components/animatedSun.vue';
-  const isClicked = ref(false);
-  function handleClick() {
-    isClicked.value = !isClicked.value,
-    console.log('clicked');
-  }
-  // Grab your API Key from runtime config
+import WeatherCard from '~/components/WeatherCard.vue';
+import Forecast from '~/components/Forecast.vue';
+import animatedSun from '~/components/animatedSun.vue';
+import { ref } from 'vue';
+
+// WeatherCard'dan gelen veriyi tutmak için
+const currentWeather = ref(null);
+const forecastData = ref(null);
+
+// WeatherCard'dan veriyi al
+function handleWeatherUpdate(weatherData) {
+  currentWeather.value = weatherData;
+  console.log('Weather Updated:', weatherData); // Debug log
+}
+
+function handleForecastUpdate(forecast) {
+  forecastData.value = forecast;
+  console.log('Forecast Updated:', forecast); // Debug log
+}
 </script>
