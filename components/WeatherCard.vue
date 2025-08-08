@@ -95,7 +95,7 @@ import { ref, onMounted, watch, defineEmits } from 'vue';
 const config = useRuntimeConfig();
 const apiKey = config.public.openWeatherMapApiKey;
 
-const city = ref('Londra');
+const city = ref('');
 const weatherData = ref(null);
 const forecast = ref(null);
 const error = ref(null);
