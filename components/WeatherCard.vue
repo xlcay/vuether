@@ -177,7 +177,7 @@ function updateCityTime(timezoneOffset) {
     cityTime.value = targetTime.toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: '',
+      timeZone: 'cityTimeZone',
     });
   };
 
